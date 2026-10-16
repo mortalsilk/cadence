@@ -41,19 +41,19 @@ The browser tests use Chrome at `/usr/bin/google-chrome` by default; set `CHROME
 
 Release files are generated under:
 
-- `src-tauri/target/release/bundle/deb/cadence_0.2.0_amd64.deb`
-- `src-tauri/target/release/bundle/appimage/cadence_0.2.0_amd64.AppImage`
+- `src-tauri/target/release/bundle/deb/cadence_0.2.1_amd64.deb`
+- `src-tauri/target/release/bundle/appimage/cadence_0.2.1_amd64.AppImage`
 
 Install the Debian package system-wide:
 
 ```sh
-sudo apt install ./src-tauri/target/release/bundle/deb/cadence_0.2.0_amd64.deb
+sudo apt install ./src-tauri/target/release/bundle/deb/cadence_0.2.1_amd64.deb
 ```
 
 Or install it for the current user without administrator access:
 
 ```sh
-./scripts/install-user.sh ./src-tauri/target/release/bundle/deb/cadence_0.2.0_amd64.deb
+./scripts/install-user.sh ./src-tauri/target/release/bundle/deb/cadence_0.2.1_amd64.deb
 ```
 
 The user installer extracts cadence to `~/.local/share/cadence-app`, creates a launcher in `~/.local/share/applications`, and links `~/.local/bin/cadence`. It does not install missing runtime libraries.
@@ -61,8 +61,8 @@ The user installer extracts cadence to `~/.local/share/cadence-app`, creates a l
 The AppImage can run directly after making it executable:
 
 ```sh
-chmod +x src-tauri/target/release/bundle/appimage/cadence_0.2.0_amd64.AppImage
-./src-tauri/target/release/bundle/appimage/cadence_0.2.0_amd64.AppImage
+chmod +x src-tauri/target/release/bundle/appimage/cadence_0.2.1_amd64.AppImage
+./src-tauri/target/release/bundle/appimage/cadence_0.2.1_amd64.AppImage
 ```
 
 ## Timer and session behavior
