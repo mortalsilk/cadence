@@ -2,6 +2,13 @@
 
 cadence is a compact, offline Linux tracker for focused blocks of time. A stint can run independently or belong to a session. Sessions have their own elapsed time and can contain any number of count-up or countdown stints. Saved activity appears in a twelve-week history grid.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/timer.png" alt="cadence timer view with count-up and countdown controls" width="380" />
+  <img src="docs/screenshots/history.png" alt="cadence history view with a twelve-week activity grid" width="380" />
+</p>
+
 ## Development
 
 The initial target is Pop!_OS / Ubuntu 24.04 on x86_64, validated on KDE/X11. Install Node.js 22.12 or newer, a current stable Rust toolchain, and the Linux build dependencies:
