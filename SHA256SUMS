@@ -1,2 +1,2 @@
-9c038cfef47eb91cccf7676957751a7d8d41a462de85efa91c54259a49862c1c  src-tauri/target/release/bundle/deb/cadence_0.2.1_amd64.deb
-77e5ed17c8bfe4ccf1115a64810046d82fed16f218e4adc22ad83ba0f71ccb19  src-tauri/target/release/bundle/appimage/cadence_0.2.1_amd64.AppImage
+439b5fa479eac1be64a55c96686e3a85f39dae73653d0646e5fd5a59b0be3b49  src-tauri/target/release/bundle/deb/cadence_0.2.2_amd64.deb
+1eb0e683bc12778e7c394d3a6c03326bbe379e07288200a7ed80f154cfd0ea5e  src-tauri/target/release/bundle/appimage/cadence_0.2.2_amd64.AppImage

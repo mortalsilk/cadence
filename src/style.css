@@ -115,6 +115,10 @@ body:has(.app-shell.mini) > dialog {
   display: grid;
   gap: 3px;
   cursor: grab;
+  touch-action: none;
+}
+.capsule-drag:active {
+  cursor: grabbing;
 }
 .capsule-drag span {
   display: block;

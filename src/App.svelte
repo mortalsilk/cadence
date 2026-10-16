@@ -195,8 +195,9 @@
       if (activeSession?.phase === 'review') modal = 'reviewSession';
     });
   }
-  function dragCapsule(event: PointerEvent) {
-    if ((event.target as HTMLElement).closest('button')) return;
+  function dragCapsule(event: MouseEvent) {
+    if (event.button !== 0) return;
+    event.preventDefault();
     void api.dragWindow().catch((value) => (error = String(value)));
   }
   function closeModal() {
@@ -325,9 +326,14 @@
     <section
       class="capsule"
       aria-label="cadence mini timer"
-      onpointerdown={dragCapsule}
     >
-      <div class="capsule-drag" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div
+        class="capsule-drag"
+        data-tauri-drag-region
+        title="Drag capsule"
+        onmousedown={dragCapsule}
+        aria-hidden="true"><span></span><span></span><span></span></div
+      >
       <div class="capsule-readout">
         <span class="capsule-time" role="timer">{clock(
           active
