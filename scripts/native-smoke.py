@@ -111,6 +111,11 @@ try:
     invoke('start_session',input={'label':'Native session','description':'Real WebKit and SQLite'})
     invoke('start_stint',mode='count_up',label='First session stint',minutes=None)
     time.sleep(1.2)
+    assert invoke('set_presentation_mode',mode='mini') == 'mini'
+    time.sleep(.2)
+    assert execute("return document.querySelector('.capsule')?.getBoundingClientRect().height") == 72
+    screenshot('native-capsule.png')
+    assert invoke('set_presentation_mode',mode='normal') == 'normal'
     tray_click('Pause / resume timing')
     paused=invoke('get_state')['active']; assert paused['phase']=='paused'
     assert invoke('get_state')['active_session']['phase']=='paused'

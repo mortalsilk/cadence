@@ -6,13 +6,14 @@ test.beforeEach(async ({ page }) => {
     let active_session: any = null;
     let records: any[] = [];
     let sessions: any[] = [];
+    let window_mode: 'normal' | 'mini' = 'normal';
     let sequence = 0;
     const callbacks = new Map<number, (value: any) => void>();
     const date = () => {
       const value = new Date();
       return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
     };
-    const view = () => ({ active, active_session });
+    const view = () => ({ active, active_session, window_mode });
     (window as any).__TAURI_INTERNALS__ = {
       transformCallback(callback: (value: any) => void) {
         const id = ++sequence;
@@ -26,6 +27,10 @@ test.beforeEach(async ({ page }) => {
         if (command === 'plugin:event|listen') return ++sequence;
         if (command === 'plugin:event|unlisten') return;
         if (command === 'get_state') return view();
+        if (command === 'set_presentation_mode') {
+          window_mode = args.mode;
+          return window_mode;
+        }
         if (command === 'start_session') {
           active_session = {
             id: `session-${++sequence}`,
@@ -307,4 +312,18 @@ test('fits supported layouts, keyboard dialogs, and reduced motion', async ({
       .locator('.add-button')
       .evaluate((element) => getComputedStyle(element).transitionDuration),
   ).toBe('0s');
+});
+
+test('switches to a compact timer capsule and restores the normal view', async ({
+  page,
+}) => {
+  await page.getByLabel('Stint label').fill('Capsule task');
+  await page.getByRole('button', { name: 'Start stint' }).click();
+  await page.getByRole('button', { name: 'Mini mode' }).click();
+  await expect(page.getByLabel('cadence mini timer')).toBeVisible();
+  await expect(page.getByRole('timer')).toBeVisible();
+  await page.getByRole('button', { name: 'Pause stint' }).click();
+  await expect(page.getByRole('button', { name: 'Resume stint' })).toBeVisible();
+  await page.getByRole('button', { name: 'End stint' }).click();
+  await expect(page.getByText('Stint ended.', { exact: true })).toBeVisible();
 });

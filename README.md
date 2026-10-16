@@ -9,6 +9,12 @@ cadence is a compact, offline Linux tracker for focused blocks of time. A stint 
   <img src="docs/screenshots/history.png" alt="cadence history view with a twelve-week activity grid" width="380" />
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/capsule.png" alt="cadence floating mini timer capsule" width="360" />
+</p>
+
+Use the small mini-mode button in the top bar to switch to a 360 × 72 floating capsule. The capsule stays above other windows, can be dragged, and provides timer pause/resume, finish, review, and return-to-normal controls. The normal window remains resizable but cannot be maximized.
+
 ## Development
 
 The initial target is Pop!_OS / Ubuntu 24.04 on x86_64, validated on KDE/X11. Install Node.js 22.12 or newer, a current stable Rust toolchain, and the Linux build dependencies:

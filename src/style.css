@@ -1,7 +1,7 @@
 :root {
   font-family: 'Barlow', sans-serif;
   color: #f2f0e9;
-  background: #17191b;
+  background: transparent;
   font-synthesis: none;
   font-weight: 400;
   font-size: 14px;
@@ -17,6 +17,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  background: #17191b;
 }
 button,
 input,
@@ -62,6 +63,121 @@ a {
   padding: 0 24px;
   display: flex;
   flex-direction: column;
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.mini-button {
+  width: 29px;
+  height: 27px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #202225;
+  color: #d5d5d0;
+  font-size: 12px;
+  line-height: 1;
+}
+.app-shell.mini {
+  min-height: 72px;
+  width: 360px;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+}
+.app-shell.mini > :not(.capsule) {
+  display: none;
+}
+:root:has(.app-shell.mini),
+body:has(.app-shell.mini) {
+  background: transparent;
+  min-width: 0;
+  overflow: hidden;
+}
+body:has(.app-shell.mini) > dialog {
+  display: none;
+}
+.capsule {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 0 14px;
+  border: 1px solid #4b1715;
+  border-radius: 36px;
+  background: #17191b;
+  box-shadow: 0 9px 28px #000a;
+  user-select: none;
+}
+.capsule-drag {
+  width: 9px;
+  display: grid;
+  gap: 3px;
+  cursor: grab;
+}
+.capsule-drag span {
+  display: block;
+  width: 9px;
+  height: 2px;
+  background: var(--red);
+}
+.capsule-readout {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.capsule-time {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.92;
+  letter-spacing: 0.5px;
+}
+.capsule-label {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.7px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.capsule-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.capsule-action {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid #414448;
+  border-radius: 50%;
+  background: #292c2f;
+  color: #f2f0e9;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+.capsule-end {
+  color: #fff;
+  background: var(--red);
+  border-color: var(--red);
+  font-size: 10px;
+}
+.capsule-review {
+  width: auto;
+  padding: 0 12px;
+  border-radius: 17px;
+  background: var(--red);
+  border-color: var(--red);
+  font-size: 11px;
+  font-weight: 600;
+}
+.capsule-restore {
+  color: #f2f0e9;
 }
 .topbar {
   height: 74px;

@@ -15,6 +15,7 @@
     ImportPreview,
     Session,
     Stint,
+    WindowMode,
   } from './types';
 
   type Modal =
@@ -68,6 +69,8 @@
   let sessionLabel = $state('');
   let sessionDescription = $state('');
   let preview = $state<ImportPreview | null>(null);
+  let windowMode = $state<WindowMode>('normal');
+  const mini = $derived(windowMode === 'mini');
 
   const days = $derived(calendarDays(offset, new Date(`${today}T12:00:00`)));
   const selectedSessions = $derived(
@@ -121,6 +124,7 @@
   });
   $effect(() => {
     if (
+      !mini &&
       activeSession?.phase === 'review' &&
       sessionReviewId !== activeSession.id
     ) {
@@ -148,9 +152,11 @@
   function applyView(view: {
     active: Active | null;
     active_session: ActiveSession | null;
+    window_mode?: WindowMode;
   }) {
     active = view.active;
     activeSession = view.active_session;
+    if (view.window_mode) windowMode = view.window_mode;
   }
   async function run(action: () => Promise<void>) {
     if (busy) return;
@@ -170,6 +176,28 @@
   }
   async function sessionAction(action: string) {
     await run(async () => applyView(await api.sessionAction(action)));
+  }
+  async function setMini(next: boolean) {
+    if (busy || modal || isReview || activeSession?.phase === 'review') return;
+    await run(async () => {
+      windowMode = await api.setPresentationMode(next ? 'mini' : 'normal');
+    });
+  }
+  async function finishFromMini() {
+    await run(async () => {
+      applyView(await api.action('finish'));
+      windowMode = await api.setPresentationMode('normal');
+    });
+  }
+  async function reviewFromMini() {
+    await run(async () => {
+      windowMode = await api.setPresentationMode('normal');
+      if (activeSession?.phase === 'review') modal = 'reviewSession';
+    });
+  }
+  function dragCapsule(event: PointerEvent) {
+    if ((event.target as HTMLElement).closest('button')) return;
+    void api.dragWindow().catch((value) => (error = String(value)));
   }
   function closeModal() {
     if (!busy) {
@@ -268,6 +296,9 @@
         const errorOff = await api.onError((message) => (error = message));
         if (disposed) return errorOff();
         cleanup.push(errorOff);
+        const modeOff = await api.onWindowMode((mode) => (windowMode = mode));
+        if (disposed) return modeOff();
+        cleanup.push(modeOff);
         const initial = await api.state();
         applyView(initial);
         if (initial.warning) {
@@ -289,7 +320,78 @@
 </script>
 
 <svelte:head><title>cadence</title></svelte:head>
-<div class="app-shell">
+<div class="app-shell" class:mini>
+  {#if mini}
+    <section
+      class="capsule"
+      aria-label="cadence mini timer"
+      onpointerdown={dragCapsule}
+    >
+      <div class="capsule-drag" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="capsule-readout">
+        <span class="capsule-time" role="timer">{clock(
+          active
+            ? active.target_ms === null
+              ? active.elapsed_ms
+              : Math.max(0, active.target_ms - active.elapsed_ms)
+            : activeSession?.elapsed_ms ?? 0,
+        )}</span>
+        <span
+          class="capsule-label"
+          title={active?.label || activeSession?.label || 'Ready'}
+          >{active?.phase === 'review'
+            ? 'Stint ended'
+            : active
+              ? active.label || 'Untitled stint'
+              : activeSession?.phase === 'review'
+                ? 'Session ended'
+                : activeSession
+                  ? activeSession.label
+                  : 'Ready'}</span
+        >
+      </div>
+      <div class="capsule-actions">
+        {#if active?.phase === 'review' || activeSession?.phase === 'review'}
+          <button
+            class="capsule-action capsule-review"
+            title="Review ended record"
+            aria-label="Review ended record"
+            onclick={reviewFromMini}>Review</button
+          >
+        {:else if active}
+          <button
+            class="capsule-action"
+            title={running ? 'Pause stint' : 'Resume stint'}
+            aria-label={running ? 'Pause stint' : 'Resume stint'}
+            disabled={busy}
+            onclick={() => timerAction(running ? 'pause' : 'resume')}
+            >{running ? 'Ⅱ' : '▶'}</button
+          ><button
+            class="capsule-action capsule-end"
+            title="End stint"
+            aria-label="End stint"
+            disabled={busy}
+            onclick={finishFromMini}>■</button
+          >
+        {:else if activeSession}
+          <button
+            class="capsule-action"
+            title={sessionRunning ? 'Pause session' : 'Resume session'}
+            aria-label={sessionRunning ? 'Pause session' : 'Resume session'}
+            disabled={busy}
+            onclick={() => sessionAction(sessionRunning ? 'pause' : 'resume')}
+            >{sessionRunning ? 'Ⅱ' : '▶'}</button
+          >
+        {/if}
+        <button
+          class="capsule-action capsule-restore"
+          title="Return to normal"
+          aria-label="Return to normal"
+          onclick={() => setMini(false)}>↗</button
+        >
+      </div>
+    </section>
+  {/if}
   <header class="topbar">
     <a
       class="brand"
@@ -303,7 +405,15 @@
         class="brand-dot">.</span
       ></a
     >
-    <span class="local-badge"><span></span> LOCAL / OFFLINE</span>
+    <div class="topbar-actions">
+      <button
+        class="mini-button"
+        title="Mini mode"
+        aria-label="Mini mode"
+        disabled={!!modal || isReview || activeSession?.phase === 'review'}
+        onclick={() => setMini(true)}>▰</button
+      ><span class="local-badge"><span></span> LOCAL / OFFLINE</span>
+    </div>
   </header>
   <nav class="tabs" aria-label="Primary navigation">
     <button

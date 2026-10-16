@@ -3,12 +3,12 @@ use cadence_core::{
     Session, SessionInput, Stamp, Stint,
 };
 use chrono::Local;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io::Write, sync::Mutex, time::Instant};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager, State,
+    Emitter, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State,
 };
 use tauri_plugin_notification::NotificationExt;
 
@@ -17,6 +17,20 @@ struct AppState {
     origin: Instant,
     pending_import: Mutex<Option<String>>,
     warning: Mutex<Option<String>>,
+    window_mode: Mutex<WindowMode>,
+    normal_bounds: Mutex<Option<WindowBounds>>,
+    capsule_bounds: Mutex<Option<WindowBounds>>,
+}
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum WindowMode {
+    Normal,
+    Mini,
+}
+#[derive(Clone, Copy)]
+struct WindowBounds {
+    position: PhysicalPosition<i32>,
+    size: PhysicalSize<u32>,
 }
 impl AppState {
     fn now(&self) -> Stamp {
@@ -36,6 +50,7 @@ struct View {
     active: Option<Active>,
     active_session: Option<ActiveSession>,
     warning: Option<String>,
+    window_mode: WindowMode,
 }
 fn notify_done(app: &tauri::AppHandle) {
     if let Err(e) = app
@@ -64,6 +79,65 @@ fn show(app: &tauri::AppHandle) {
         let _ = w.set_focus();
     }
 }
+fn current_bounds(window: &tauri::WebviewWindow) -> Result<WindowBounds> {
+    Ok(WindowBounds {
+        position: window.outer_position().map_err(|e| e.to_string())?,
+        size: window.outer_size().map_err(|e| e.to_string())?,
+    })
+}
+fn clamp_to_work_area(
+    window: &tauri::WebviewWindow,
+    position: PhysicalPosition<i32>,
+    size: PhysicalSize<u32>,
+) -> Result<PhysicalPosition<i32>> {
+    let Some(monitor) = window.current_monitor().map_err(|e| e.to_string())? else {
+        return Ok(position);
+    };
+    let area = monitor.work_area();
+    let right = area.position.x + area.size.width.saturating_sub(size.width) as i32;
+    let bottom = area.position.y + area.size.height.saturating_sub(size.height) as i32;
+    Ok(PhysicalPosition::new(
+        position.x.clamp(area.position.x, right),
+        position.y.clamp(area.position.y, bottom),
+    ))
+}
+fn set_window_mode(app: &tauri::AppHandle, state: &AppState, mode: WindowMode) -> Result<WindowMode> {
+    let window = app.get_webview_window("main").ok_or("Main window is unavailable.")?;
+    let current = *state.window_mode.lock().map_err(|e| e.to_string())?;
+    if current == mode {
+        return Ok(mode);
+    }
+    if mode == WindowMode::Mini {
+        *state.normal_bounds.lock().map_err(|e| e.to_string())? = Some(current_bounds(&window)?);
+        window
+            .set_min_size::<LogicalSize<f64>>(None)
+            .map_err(|e| e.to_string())?;
+        window.set_size(LogicalSize::new(360.0, 72.0)).map_err(|e| e.to_string())?;
+        window.set_resizable(false).map_err(|e| e.to_string())?;
+        window.set_maximizable(false).map_err(|e| e.to_string())?;
+        window.set_decorations(false).map_err(|e| e.to_string())?;
+        window.set_always_on_top(true).map_err(|e| e.to_string())?;
+        if let Some(bounds) = *state.capsule_bounds.lock().map_err(|e| e.to_string())? {
+            let capsule_size = window.outer_size().map_err(|e| e.to_string())?;
+            let position = clamp_to_work_area(&window, bounds.position, capsule_size)?;
+            let _ = window.set_position(position);
+        }
+    } else {
+        *state.capsule_bounds.lock().map_err(|e| e.to_string())? = Some(current_bounds(&window)?);
+        window.set_always_on_top(false).map_err(|e| e.to_string())?;
+        window.set_decorations(true).map_err(|e| e.to_string())?;
+        window.set_resizable(true).map_err(|e| e.to_string())?;
+        window.set_maximizable(false).map_err(|e| e.to_string())?;
+        window.set_min_size(Some(LogicalSize::new(360.0, 540.0))).map_err(|e| e.to_string())?;
+        if let Some(bounds) = *state.normal_bounds.lock().map_err(|e| e.to_string())? {
+            window.set_size(bounds.size).map_err(|e| e.to_string())?;
+            window.set_position(bounds.position).map_err(|e| e.to_string())?;
+        }
+    }
+    *state.window_mode.lock().map_err(|e| e.to_string())? = mode;
+    app.emit("window-mode", mode).map_err(|e| e.to_string())?;
+    Ok(mode)
+}
 fn publish(app: &tauri::AppHandle, state: &AppState) -> Result<View> {
     let mut engine = state.engine()?;
     let now = state.now();
@@ -74,6 +148,7 @@ fn publish(app: &tauri::AppHandle, state: &AppState) -> Result<View> {
         active: engine.snapshot(&now),
         active_session: engine.session_snapshot(&now),
         warning: state.warning.lock().map_err(|e| e.to_string())?.clone(),
+        window_mode: *state.window_mode.lock().map_err(|e| e.to_string())?,
     };
     app.emit("timer-state", &view).map_err(|e| e.to_string())?;
     Ok(view)
@@ -81,6 +156,14 @@ fn publish(app: &tauri::AppHandle, state: &AppState) -> Result<View> {
 #[tauri::command]
 fn get_state(app: tauri::AppHandle, state: State<AppState>) -> Result<View> {
     publish(&app, &state)
+}
+#[tauri::command]
+fn set_presentation_mode(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    mode: WindowMode,
+) -> Result<WindowMode> {
+    set_window_mode(&app, &state, mode)
 }
 #[tauri::command]
 fn start_stint(
@@ -308,6 +391,9 @@ fn main() {
                 origin: Instant::now(),
                 pending_import: Mutex::new(None),
                 warning: Mutex::new(None),
+                window_mode: Mutex::new(WindowMode::Normal),
+                normal_bounds: Mutex::new(None),
+                capsule_bounds: Mutex::new(None),
             });
             let open = MenuItem::with_id(app, "open", "Open cadence", true, None::<&str>)?;
             let toggle =
@@ -407,6 +493,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_state,
+            set_presentation_mode,
             start_stint,
             timer_action,
             save_stint,

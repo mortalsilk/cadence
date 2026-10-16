@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type {
   DaySummary,
@@ -10,10 +11,14 @@ import type {
   SessionInput,
   Stint,
   View,
+  WindowMode,
 } from './types';
 export const desktop = '__TAURI_INTERNALS__' in window;
 export const api = {
   state: () => invoke<View>('get_state'),
+  setPresentationMode: (mode: WindowMode) =>
+    invoke<WindowMode>('set_presentation_mode', { mode }),
+  dragWindow: () => getCurrentWindow().startDragging(),
   start: (mode: Mode, label: string, minutes: number | null) =>
     invoke<View>('start_stint', { mode, label, minutes }),
   action: (action: string) => invoke<View>('timer_action', { action }),
@@ -37,6 +42,8 @@ export const api = {
     listen<View>('timer-state', (event) => fn(event.payload)),
   onError: (fn: (message: string) => void) =>
     listen<string>('cadence-error', (event) => fn(event.payload)),
+  onWindowMode: (fn: (mode: WindowMode) => void) =>
+    listen<WindowMode>('window-mode', (event) => fn(event.payload)),
   async export(format: 'csv' | 'json') {
     const path = await save({
       defaultPath: `cadence-${new Date().toISOString().slice(0, 10)}.${format}`,

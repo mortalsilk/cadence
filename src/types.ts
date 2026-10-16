@@ -1,5 +1,6 @@
 export type Mode = 'count_up' | 'countdown' | 'manual';
 export type Phase = 'running' | 'paused' | 'review';
+export type WindowMode = 'normal' | 'mini';
 
 export interface Active {
   id: string;
@@ -52,6 +53,7 @@ export interface View {
   active: Active | null;
   active_session: ActiveSession | null;
   warning?: string | null;
+  window_mode: WindowMode;
 }
 export interface DaySummary {
   count: number;
