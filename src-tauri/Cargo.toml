@@ -1,6 +1,6 @@
 [package]
 name = "cadence"
-version = "0.2.2"
+version = "0.2.3"
 description = "Local stint and session tracker"
 authors = ["cadence contributors"]
 edition = "2021"
